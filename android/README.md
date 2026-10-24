@@ -1,6 +1,12 @@
 # Android : application locale et rappels
 
-Ce projet conserve l’interface HTML et ajoute une enveloppe Android native Java, sans bibliothèque applicative supplémentaire. **Le code est fourni, pas un APK déjà compilé ou validé sur appareil.** Android 8 (API 26) minimum.
+Ce projet conserve l’interface HTML et ajoute une enveloppe Android native Java, sans bibliothèque applicative supplémentaire. **Un APK de développement est produit par chaque CI réussie ; il n’est pas validé sur appareil par ces tests.** Android 8 (API 26) minimum.
+
+## Télécharger l’APK de la CI
+
+Dans GitHub, ouvrez **Actions → Tests et APK Android**, choisissez une exécution réussie correspondant à la révision souhaitée, puis téléchargez l’artefact **osteo-campus-debug-…**. Décompressez-le pour obtenir `app-debug.apk`. Les artefacts expirent après 14 jours et leur téléchargement nécessite une connexion GitHub. Les rapports lint sont joints séparément.
+
+Cet APK est signé avec une clé de développement éphémère du runner, **pas une signature de production stable**. Deux exécutions peuvent produire des signatures différentes : Android peut alors refuser une mise à jour directe. Désinstaller pour réinstaller efface la progression ; ne le faites pas sans accepter cette perte. L’APK sert aux essais, pas à une distribution durable. La CI ne publie pas de version Play Store, n’utilise pas de secret de signature et ne teste pas les notifications sur appareil.
 
 ## Construire et installer
 
@@ -56,4 +62,4 @@ gradle :app:assembleDebug :app:lintDebug
 
 Tests manuels indispensables avant distribution : API 26 et 33+, acceptation/refus de permission, canal désactivé, application fermée, écran verrouillé, redémarrage, changement d’heure/fuseau, annulation, progression vide, nouveaux cours appris, ouverture du bon quiz depuis la notification et liens externes sans accès au pont. Contrôlez aussi l’affichage avec navigation gestuelle et grandes tailles de police.
 
-Dans l’environnement de réalisation, Java/Gradle et le SDK Android ne sont pas disponibles : compilation, lint Android et tests de réception réels ne sont pas validés. Le scénario navigateur est également bloqué par la bibliothèque système `libglib-2.0.so.0` manquante. Les tests Node contrôlent les données, pages, scores et échanges JavaScript du pont, pas la livraison effective d’une notification Android.
+Le workflow `.github/workflows/ci.yml` installe JDK 17, Gradle 8.9 et le SDK Android 35 sur un runner Ubuntu, exécute le test Java ci-dessus, compile et lance le lint. Il vérifie que chaque fichier web attendu est identique dans l’APK et dans la révision testée. Le résultat de chaque exécution fait foi ; les tests de réception réelle restent manuels. Dans l’environnement local de réalisation, Java/Gradle et le SDK Android ne sont pas disponibles. Le scénario navigateur est également bloqué par la bibliothèque système `libglib-2.0.so.0` manquante. Les tests Node contrôlent les données, pages, scores et échanges JavaScript du pont, pas la livraison effective d’une notification Android.

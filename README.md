@@ -9,7 +9,7 @@ Une application francophone de fondations pour PluriPASS à Angers, avec atlas d
 - **Ce n’est pas l’intégralité des cours de première année.** Les fiches sont des fondations originales à couverture partielle. Les 27 UEO sont listées mais leurs cours ne sont pas intégrés ; les supports détaillés Moodle, les TD, les modalités d’évaluation et les choix d’UEO restent nécessaires pour compléter fidèlement le programme.
 - Les nouveaux quiz ont 3 QCM à réponse unique ; les examens tirent 2 questions par fiche, sans doublon. Le seuil de 80 % est interne à l’application, pas le barème universitaire.
 - **Projet Android natif ajouté** : notifications locales quotidiennes à heure aléatoire, plage configurable, cours tiré parmi les cours lus ou maîtrisés, ouverture du quiz au toucher. Aucun serveur push ni migration de l’interface n’est nécessaire.
-- Le fichier HTML reste utilisable sans notifications d’arrière-plan. Pour les rappels, il faut construire et installer l’APK : voir [le guide Android](android/README.md). **Aucun APK compilé ni test sur téléphone n’est livré dans cette version.**
+- Le fichier HTML reste utilisable sans notifications d’arrière-plan. Pour les rappels, il faut construire et installer l’APK : voir [le guide Android](android/README.md). La CI fournit un APK de développement téléchargeable lorsqu’elle réussit ; les notifications restent à valider sur téléphone.
 
 ## Ouvrir l’application
 
@@ -71,6 +71,10 @@ Chaque cours doit fournir suffisamment de questions pour `examPerLesson`. Les co
 Ajoutez un objet au catalogue avec `id`, `title`, `subject`, `description`, `lessons` et `examPerLesson`. Pour les nouvelles UE, suivez la structure `units` de `curriculum.js`, avec semestre, pages de référence, fiches, exercices et QCM. L’accueil et la progression affichent les chapitres ; chaque chapitre reçoit son propre examen et ses résultats. Les cours sans os présentent leur référence et leurs limites plutôt qu’un squelette hors sujet. Un autre atlas interactif (muscles, neurologie, etc.) demande un développement spécifique.
 
 ## Vérification
+
+Le workflow GitHub Actions **Tests et APK Android** s’exécute sur les pull requests et les changements de la branche principale actuelle (`vibe/anatomie-interactive-479d12`). Il exécute les tests JavaScript, les tests Java du calendrier des rappels, la compilation Android et le lint, puis vérifie le contenu web embarqué. Il ne publie ni sur le Play Store ni sur un serveur.
+
+Pour récupérer l’APK : ouvrez **Actions → Tests et APK Android → une exécution réussie → Artifacts → osteo-campus-debug-…**, téléchargez et décompressez l’archive. Les artefacts sont conservés 14 jours ; une connexion GitHub est nécessaire. Voir [les précautions d’installation Android](android/README.md). Cette CI ne remplace pas les essais sur téléphone et n’exécute pas le scénario navigateur Playwright.
 
 Avec Node.js 22 ou supérieur, sans `npm install` :
 

@@ -1,0 +1,86 @@
+name: Tests et APK Android
+
+on:
+  pull_request:
+  push:
+    branches:
+      - vibe/anatomie-interactive-479d12
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  javascript:
+    name: Tests JavaScript
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - run: npm test
+      - run: npm run check
+
+  android:
+    name: Tests Java, lint et APK Android
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Tester les dates des rappels
+        run: |
+          mkdir -p "$RUNNER_TEMP/campus-java-tests"
+          javac -d "$RUNNER_TEMP/campus-java-tests" app/src/main/java/fr/osteocampus/ReminderSchedule.java tests/ReminderScheduleTest.java
+          java -cp "$RUNNER_TEMP/campus-java-tests" ReminderScheduleTest
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
+      - name: Installer le SDK de compilation
+        run: sdkmanager 'platforms;android-35' 'build-tools;34.0.0'
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a
+        with:
+          gradle-version: '8.9'
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+      - name: Compiler et analyser Android
+        run: gradle --no-daemon --console=plain :app:assembleDebug :app:lintDebug
+      - name: Vérifier les cours embarqués
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          root = Path('..')
+          with ZipFile('app/build/outputs/apk/debug/app-debug.apk') as apk:
+              for name in ('index.html', 'styles.css', 'data.js', 'curriculum.js', 'engine.js', 'reminders.js', 'skeleton.js', 'app.js', 'assets/favicon.svg'):
+                  assert apk.read('assets/' + name) == (root / name).read_bytes(), name
+          print('Tous les fichiers web sont présents et à jour dans l’APK.')
+          PY
+      - name: Conserver l’APK de développement
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: osteo-campus-debug-${{ github.run_number }}
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Conserver les rapports lint
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: android-lint-${{ github.run_number }}
+          path: android/app/build/reports/lint-results-debug.*
+          if-no-files-found: ignore
+          retention-days: 14
