@@ -1,0 +1,10 @@
+{
+  "name": "osteo-campus",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Parcours interactif francophone de découverte du squelette humain",
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "check": "node --check data.js && node --check engine.js && node --check skeleton.js && node --check app.js"
+  }
+}
