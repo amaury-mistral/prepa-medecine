@@ -13,7 +13,8 @@ with sync_playwright() as playwright:
     page.on('pageerror', lambda error: errors.append(str(error)))
     page.on('request', lambda request: requests.append(request.url))
     page.goto(URL)
-    assert page.locator('.lesson-card').count() == 6
+    assert page.locator('.lesson-card').count() == 28
+    page.locator('#chapter-filter').select_option('squelette')
     page.screenshot(path='/tmp/osteo-home.png', full_page=True)
     page.locator('.chapter-copy .button').click()
     assert 'Les repères essentiels' in page.locator('h1').inner_text()
@@ -78,7 +79,7 @@ with sync_playwright() as playwright:
     assert page.evaluate('progress.exams.squelette.attempts') == 1
     for width in [390, 320, 768, 1440]:
         page.set_viewport_size({'width': width, 'height': 900})
-        for route in ['parcours', 'atlas', 'cours/superieur', 'quiz/tete', 'progression', 'sources']:
+        for route in ['parcours', 'atlas', 'cours/superieur', 'cours/molecules', 'quiz/tete', 'quiz/molecules', 'examen/ue1', 'progression', 'sources', 'rappels']:
             page.goto(URL + '#/' + route)
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), (width, route)
         if width == 390:
@@ -101,7 +102,7 @@ with sync_playwright() as playwright:
     fallback = blocked.new_page()
     fallback.goto(URL)
     assert 'sauvegarde locale est indisponible' in fallback.locator('[role="status"]').inner_text()
-    assert fallback.locator('.lesson-card').count() == 6
+    assert fallback.locator('.lesson-card').count() == 28
     blocked.close()
     browser.close()
     print('Browser smoke passed: offline launch, atlas, keyboard, quiz, exam, persistence, reset, responsive layouts, storage fallback; zero browser errors or network requests.')
