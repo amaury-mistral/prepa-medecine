@@ -1,6 +1,15 @@
 # Ostéo Campus
 
-Une application web francophone pour découvrir le squelette humain avant et pendant les premiers cours de médecine. Sans compte, sans serveur, sans dépendance applicative et utilisable hors ligne.
+Une application francophone de fondations pour PluriPASS à Angers, avec atlas du squelette, quiz et examens. Sans compte, sans serveur, sans dépendance applicative et utilisable hors ligne.
+
+## Angers et Android : état de cette version
+
+- **28 cours/fiches, 15 chapitres et 96 questions** : 6 cours du squelette et 22 fiches supplémentaires, avec quiz et examen dans chaque chapitre.
+- Repérage des **12 UE de PluriPASS Angers**, de l’anglais, de la culture numérique, du 3PE et de la communication, fondé sur le **livret officiel 2025–2026**. L’année d’inscription de l’étudiante n’a pas été précisée ; vérifiez sa maquette.
+- **Ce n’est pas l’intégralité des cours de première année.** Les fiches sont des fondations originales à couverture partielle. Les 27 UEO sont listées mais leurs cours ne sont pas intégrés ; les supports détaillés Moodle, les TD, les modalités d’évaluation et les choix d’UEO restent nécessaires pour compléter fidèlement le programme.
+- Les nouveaux quiz ont 3 QCM à réponse unique ; les examens tirent 2 questions par fiche, sans doublon. Le seuil de 80 % est interne à l’application, pas le barème universitaire.
+- **Projet Android natif ajouté** : notifications locales quotidiennes à heure aléatoire, plage configurable, cours tiré parmi les cours lus ou maîtrisés, ouverture du quiz au toucher. Aucun serveur push ni migration de l’interface n’est nécessaire.
+- Le fichier HTML reste utilisable sans notifications d’arrière-plan. Pour les rappels, il faut construire et installer l’APK : voir [le guide Android](android/README.md). La CI fournit un APK de développement téléchargeable lorsqu’elle réussit ; les notifications restent à valider sur téléphone.
 
 ## Ouvrir l’application
 
@@ -39,7 +48,10 @@ Les textes, questions et tracés sont rédigés pour cette application. Les réf
 ## Architecture et enrichissement
 
 - `index.html` : point d’entrée, scripts classiques pour permettre l’ouverture locale.
-- `data.js` : catalogue de chapitres, cours, os et banques de questions.
+- `data.js` : chapitre historique du squelette, cours, os et banques de questions.
+- `curriculum.js` : 12 UE et transversales Angers, couverture partielle explicitement indiquée, références au livret et liste d’UEO.
+- `reminders.js` : sélection des cours appris et interface avec le pont Android.
+- `android/` : WebView locale isolée, planificateur, permissions, réception et annulation des notifications.
 - `engine.js` : tirage des examens, scores, validation et stockage de la progression.
 - `skeleton.js` : géométrie et génération du schéma SVG.
 - `app.js` : navigation par fragment, pages et interactions.
@@ -52,13 +64,17 @@ Ajoutez un objet à `chapter.lessons` dans `data.js`, avec un `id` unique et sta
 
 Une question textuelle possède `id`, `prompt`, `choices` (quatre réponses), `answer` (index commençant à zéro), `explanation` et `bone: null`. Une question visuelle utilise `bone` (identifiant de la zone), `choices: []` et `answer: 0` ; le moteur compare la zone sélectionnée à `bone`. Le nom n’apparaît pas dans les libellés accessibles du schéma pendant l’évaluation.
 
-Chaque cours doit fournir au moins une question visuelle et suffisamment de QCM pour `examPerLesson`. Les cartes, la navigation, les scores et l’examen sont calculés à partir des données. Les identifiants existants ne doivent pas changer si l’on souhaite conserver les résultats locaux.
+Chaque cours doit fournir suffisamment de questions pour `examPerLesson`. Les cours du squelette incluent une question visuelle ; les fiches textuelles utilisent `bones: []` et uniquement des QCM. Les cartes, la navigation, les scores et l’examen sont calculés à partir des données. Les identifiants existants ne doivent pas changer si l’on souhaite conserver les résultats locaux.
 
 ### Ajouter un chapitre
 
-Ajoutez un objet à `chapters` avec `id`, `title`, `subject`, `description`, `lessons` et `examPerLesson`. L’accueil et la progression affichent les chapitres du catalogue ; chaque chapitre reçoit son propre examen et ses résultats. Cette version partage un atlas du squelette. Un chapitre consacré à un autre système (muscles, neurologie, etc.) nécessite aussi un nouvel atlas et l’adaptation des libellés anatomiques dans l’interface : ajouter uniquement des données ne crée pas un nouvel outil de visualisation.
+Ajoutez un objet au catalogue avec `id`, `title`, `subject`, `description`, `lessons` et `examPerLesson`. Pour les nouvelles UE, suivez la structure `units` de `curriculum.js`, avec semestre, pages de référence, fiches, exercices et QCM. L’accueil et la progression affichent les chapitres ; chaque chapitre reçoit son propre examen et ses résultats. Les cours sans os présentent leur référence et leurs limites plutôt qu’un squelette hors sujet. Un autre atlas interactif (muscles, neurologie, etc.) demande un développement spécifique.
 
 ## Vérification
+
+Le workflow GitHub Actions **Tests et APK Android** s’exécute sur les pull requests et les changements de la branche principale actuelle (`vibe/anatomie-interactive-479d12`). Il exécute les tests JavaScript, les tests Java du calendrier des rappels, la compilation Android et le lint, puis vérifie le contenu web embarqué. Il ne publie ni sur le Play Store ni sur un serveur.
+
+Pour récupérer l’APK : ouvrez **Actions → Tests et APK Android → une exécution réussie → Artifacts → osteo-campus-debug-…**, téléchargez et décompressez l’archive. Les artefacts sont conservés 14 jours ; une connexion GitHub est nécessaire. Voir [les précautions d’installation Android](android/README.md). Cette CI ne remplace pas les essais sur téléphone et n’exécute pas le scénario navigateur Playwright.
 
 Avec Node.js 22 ou supérieur, sans `npm install` :
 

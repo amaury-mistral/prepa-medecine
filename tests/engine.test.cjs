@@ -3,7 +3,9 @@ const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const { chapters, bones, lessons } = require('../data.js');
+const { bones } = require('../data.js');
+const chapters = [...require('../data.js').chapters, ...require('../curriculum.js').chapters];
+const lessons = chapters.flatMap(chapter => chapter.lessons);
 const E = require('../engine.js');
 
 test('all chapter, lesson, bone and question identifiers are unique', () => {
@@ -22,7 +24,7 @@ test('every course has objectives, content, a practice task and valid corrected 
       assert.ok(lesson.practice);
       assert.ok(lesson.duration > 0);
       assert.ok(lesson.questions.length >= chapter.examPerLesson);
-      assert.ok(lesson.questions.some(question => question.bone));
+      if (lesson.bones.length) assert.ok(lesson.questions.some(question => question.bone));
       for (const id of lesson.bones) assert.ok(bones.some(bone => bone.id === id));
       for (const question of lesson.questions) {
         assert.ok(question.explanation);
@@ -47,7 +49,7 @@ test('the exam samples every lesson with one visual question per lesson and no d
       for (const lesson of chapter.lessons) {
         const subset = questions.filter(question => question.lessonId === lesson.id);
         assert.equal(subset.length, chapter.examPerLesson);
-        assert.equal(subset.filter(question => question.bone).length, 1);
+        assert.equal(subset.filter(question => question.bone).length, lesson.bones.length ? 1 : 0);
       }
     }
   }
@@ -115,7 +117,7 @@ test('every bone has interactive SVG geometry, and quiz markup does not disclose
 test('all application scripts and styles load from local files without dependencies', () => {
   const html = readFileSync(path.join(__dirname, '../index.html'), 'utf8');
   const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map(match => match[1]);
-  assert.deepEqual(scripts, ['data.js', 'engine.js', 'skeleton.js', 'app.js']);
+  assert.deepEqual(scripts, ['data.js', 'curriculum.js', 'reminders.js', 'engine.js', 'skeleton.js', 'app.js']);
   for (const script of scripts) assert.ok(readFileSync(path.join(__dirname, '..', script)).length);
   assert.equal(/(?:src|href)="https?:/.test(html), false);
 });

@@ -14,15 +14,19 @@ function application(hash = '#/parcours', storageBlocked = false) {
     window: { localStorage: storageBlocked ? null : storage, addEventListener() {}, scrollTo() {} }
   };
   vm.createContext(context);
-  for (const file of ['data.js', 'engine.js', 'skeleton.js', 'app.js']) {
+  for (const file of ['data.js', 'curriculum.js', 'reminders.js', 'engine.js', 'skeleton.js', 'app.js']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), context, { filename: file });
   }
   return { app, context, run: code => vm.runInContext(code, context) };
 }
 
 test('every application route renders without a DOM library or backend', () => {
-  const routes = ['parcours', 'atlas', 'progression', 'sources', 'inconnue', 'cours/inconnu', 'quiz/inconnu', 'examen/inconnu', 'examen/squelette'];
+  const routes = ['parcours', 'atlas', 'progression', 'sources', 'rappels', 'inconnue', 'cours/inconnu', 'quiz/inconnu', 'examen/inconnu', 'examen/squelette'];
   for (const id of ['reperes', 'tete', 'tronc', 'superieur', 'inferieur', 'synthese']) routes.push(`cours/${id}`, `quiz/${id}`);
+  for (const chapter of require('../curriculum.js').chapters) {
+    routes.push(`examen/${chapter.id}`);
+    for (const lesson of chapter.lessons) routes.push(`cours/${lesson.id}`, `quiz/${lesson.id}`);
+  }
   for (const route of routes) {
     const { app } = application(`#/${route}`);
     assert.ok(app.innerHTML.includes('<main id="main"'));
@@ -65,5 +69,28 @@ test('exam defers feedback until completion and creates revision links for wrong
 test('missing storage shows a warning while all course cards remain usable', () => {
   const { app } = application('#/parcours', true);
   assert.ok(app.innerHTML.includes('La sauvegarde locale est indisponible'));
-  assert.equal((app.innerHTML.match(/class="lesson-card/g) || []).length, 6);
+  assert.equal((app.innerHTML.match(/class="lesson-card/g) || []).length, 6 + require('../curriculum.js').chapters.flatMap(chapter => chapter.lessons).length);
+});
+
+test('opening index.html without a fragment displays the catalogue', () => {
+  const { app } = application('');
+  assert.ok(app.innerHTML.includes('Préparer son année'));
+  assert.ok(!app.innerHTML.includes('Cette page n’existe pas'));
+});
+
+test('non-anatomy courses omit the skeleton and retain source and coverage warning', () => {
+  const { app } = application('#/cours/molecules');
+  assert.ok(!app.innerHTML.includes('class="pocket-skeleton"'));
+  assert.ok(app.innerHTML.includes('Couverture partielle'));
+  assert.ok(app.innerHTML.includes('pages 18–19'));
+});
+
+test('a new chapter exam finishes and persists independently of the skeleton', () => {
+  const { run, app } = application('#/examen/ue1');
+  const total = run('activeQuiz.questions.length');
+  assert.equal(total, 4);
+  for (let index = 0; index < total; index++) run('activeQuiz.selected = activeQuiz.questions[activeQuiz.index].answer; submitAnswer()');
+  assert.equal(run('progress.exams.ue1.best'), 100);
+  assert.equal(run('progress.exams.squelette'), undefined);
+  assert.ok(app.innerHTML.includes('Votre correction détaillée'));
 });
